@@ -547,7 +547,7 @@
       reloadScripts(urls, function() {
         var player;
         var fixture = document.getElementById('player-fixture');
-        var videoEl = document.createElement('video-js');
+        var videoEl = document.createElement('video');
 
         videoEl.setAttribute('controls', '');
         videoEl.setAttribute('preload', stateEls.preload.options[stateEls.preload.selectedIndex].value || 'auto');

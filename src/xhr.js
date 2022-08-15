@@ -11,11 +11,15 @@
  */
 import videojs from 'video.js';
 import window from 'global/window';
+import videojsXHR from '@videojs/xhr';
+
+
 
 const {
-  xhr: videojsXHR,
+  // xhr: videojsXHR,
   mergeOptions
 } = videojs;
+
 
 const callbackWrapper = function(request, error, response, callback) {
   const reqResponse = request.responseType === 'arraybuffer' ? request.response : request.responseText;
@@ -134,6 +138,8 @@ const segmentXhrHeaders = function(segment) {
   }
   return headers;
 };
+
+window.xhrFactory = xhrFactory;
 
 export {segmentXhrHeaders, callbackWrapper, xhrFactory};
 
