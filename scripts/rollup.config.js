@@ -26,12 +26,16 @@ const options = {
   },
   externals(defaults) {
     return Object.assign(defaults, {
+      browser: defaults.browser.concat([
+        'video.js'
+      ]),
       module: defaults.module.concat([
         'aes-decrypter',
         'm3u8-parser',
         'mpd-parser',
         'mux.js',
-        '@videojs/vhs-utils'
+        '@videojs/vhs-utils',
+        'video.js'
       ])
     });
   },

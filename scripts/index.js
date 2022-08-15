@@ -519,10 +519,11 @@
 
     stateEls.minified.addEventListener('change', function(event) {
       var urls = [
-        'node_modules/video.js/dist/alt/video.core',
-        'node_modules/videojs-contrib-eme/dist/videojs-contrib-eme',
-        'node_modules/videojs-contrib-quality-levels/dist/videojs-contrib-quality-levels',
-        'node_modules/videojs-http-source-selector/dist/videojs-http-source-selector'
+        // 'node_modules/video.js/dist/alt/video.core',
+        './src/video',
+        // 'node_modules/videojs-contrib-eme/dist/videojs-contrib-eme',
+        // 'node_modules/videojs-contrib-quality-levels/dist/videojs-contrib-quality-levels',
+        // 'node_modules/videojs-http-source-selector/dist/videojs-http-source-selector'
       ].map(function(url) {
         return url + (event.target.checked ? '.min' : '') + '.js';
       });
@@ -619,7 +620,7 @@
         player.height(264);
 
         // configure videojs-contrib-eme
-        player.eme();
+        // player.eme();
 
         stateEls.debug.dispatchEvent(newEvent('change'));
         stateEls.muted.dispatchEvent(newEvent('change'));
