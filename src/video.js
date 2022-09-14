@@ -19,15 +19,15 @@ ET.prototype.addEventListener = function(...args) {
 ET.prototype.removeEventListener = function(...args) {
   this.target.removeEventListener(...args);
 };
-ET.prototype.on = function(...args) {
-  if (typeof args[0] === 'string') {
-    this.addEventListener(...args);
+ET.prototype.on = function(type, cb, opts) {
+  if (typeof type === 'string') {
+    this.addEventListener(type, cb.bind(this), opts);
     return;
-  } else if (Array.isArray(args[0])) {
-    args[0].forEach((type) => this.target.addEventListener(type, ...args.slice(1)));
+  } else if (Array.isArray(type)) {
+    type.forEach((typ) => this.target.addEventListener(typ, cb.bind(this), opts));
     return;
   }
-  args[0].addEventListener(...args.slice(1))
+  type.addEventListener(cb, opts.bind(this));
 };
 ET.prototype.one = function(type, cb, opts) {
   this.addEventListener(type, cb, {...opts, once: true});
@@ -46,18 +46,36 @@ ET.prototype.trigger = function(type) {
     });
   } else if (typeof type === 'string') {
     evt = new Event(type);
+  } else if (type && type.type) {
+    evt = new Event(type.type);
+    evt.originalEvent = type;
   }
 
   this.target.dispatchEvent(evt);
 };
 
-class AudioTrack extends ET {
+class Track extends ET {
   constructor(opts) {
     super();
     this.options = opts;
-    this.id = opts.id;
+    this.id = opts.id ?? '';
+  }
+}
+class TextTrack extends Track {
+  constructor(opts) {
+    super(opts);
+    this.cues = [];
+  }
+
+  addCue(cue) {
+    this.cues.push(cue);
+  }
+
+  removeCue(cue) {
+    this.cues.splice(this.cues.findIndex((c) => c === cue), 1);
   }
 };
+class AudioTrack extends Track { };
 class TrackList extends ET {
   constructor() {
     super();
@@ -67,14 +85,58 @@ class TrackList extends ET {
   addTrack(track) {
     this.list.push(track);
   }
+
+  getTrackById(id) {
+    return this.list.filter((track) => track.id === id)[0];
+  }
 }
 
+const Events = [
+  'loadstart',
+  'suspend',
+  'abort',
+  'error',
+  'emptied',
+  'stalled',
+  'loadedmetadata',
+  'loadeddata',
+  'canplay',
+  'canplaythrough',
+  'playing',
+  'waiting',
+  'seeking',
+  'seeked',
+  'ended',
+  'durationchange',
+  'timeupdate',
+  'progress',
+  'play',
+  'pause',
+  'ratechange',
+  'resize',
+  'volumechange'
+];
+
 class Tech extends ET {
+  static isSupported() {
+    return true;
+  }
+  static registerSourceHandler() {}
+
   constructor(el) {
     super();
+    this.options_.playerId = "id";
     this.el_ = el;
     this.atl = new TrackList();
     this.ttl = new TrackList();
+
+    Events.forEach((type) => {
+      this.on(this.el_, type, (e) => {
+        this.trigger(e);
+      });
+    });
+
+    this.trigger('ready');
   }
 
   el() {
@@ -95,15 +157,23 @@ class Tech extends ET {
     return this.src_;
   }
 
-  autoplay() { return false; }
-  preload() {}
-  paused() { return true; }
-  currentTime() { return 0; }
-  isSupported() { return true; }
-  registerSourceHandler() {}
-  addRemoteTextTrack() { return {track: {}}; }
+  autoplay() { return this.el_.autoplay; }
+  preload() { return this.el_.preload; }
+  paused() { return this.el_.paused; }
+  currentTime() { return this.el_.currentTime; }
+  setCurrentTime(time) { this.el_.currentTime = time; }
+  seeking() { return this.el_.seeking; }
+  ended() { return this.el_.ended; }
+  duration() { return this.el_.duration; }
   buffered() { return this.el_.buffered; }
   seekable() { return this.el_.seekable; }
+  isSupported() { return true; }
+  registerSourceHandler() {}
+  addRemoteTextTrack(opts) {
+    const t = new TextTrack(opts);
+    this.ttl.addTrack(t);
+    return {track: new TextTrack(opts)};
+  }
   audioTracks() { return this.atl; }
   remoteTextTracks() { return this.ttl; }
   textTracks() { return this.ttl; }
@@ -116,10 +186,10 @@ class Player extends ET {
     this.tech_ = new Tech(el);
   }
   width() {
-    return 0;
+    return 1280;
   }
   height() {
-    return 0;
+    return 720;
   }
   seekable() {
     return makeSeekable();
@@ -137,10 +207,15 @@ class Player extends ET {
   tech() { return this.tech_; }
 }
 
-
+let player;
 const videojs = window.videojs = function(el) {
-  return new Player(el);
+  player = new Player(el);
+  return player;
 };
+
+videojs.getPlayer = function() {
+  return player;
+}
 
 videojs.options = {};
 
@@ -153,11 +228,14 @@ videojs.log = {
   },
   debug(...args) {
     console.debug(...args)
+  },
+  warn(...args) {
+    console.warn(...args);
   }
 };
 
 videojs.getTech = function() {
-  return new Tech();
+  return Tech;
 };
 
 videojs.getComponent = function (component) { return ET; };
